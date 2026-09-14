@@ -1,0 +1,2672 @@
+{
+  "name": "Shop Assistant - Intent Router",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "allowFileUploads": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -992,
+        1552
+      ],
+      "id": "86967e92-315b-4e7c-b5ae-7f6e0ed7e57b",
+      "name": "When chat message received",
+      "webhookId": "d94d8261-4a95-4c6e-a64a-6ecfd9f25aea"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Sen bir e-ticaret alışveriş asistanının yönlendirme (router) katmanısın. Görevin, kullanıcının\nmesajını analiz edip hangi kategoriye ait olduğunu belirlemektir.\n\nKategoriler:\n- urun_kesif: Ürün arama, öneri isteme\n- karsilastirma: İki veya daha fazla ürünü karşılaştırma\n- yorum_analiz: Ürün yorumlarını görme/analiz etme İSTEĞİ, VEYA yeni bir yorum/değerlendirme/\n  puan/yıldız YAZMA-VERME-EKLEME isteği\n- siparis_destek: Kargo, teslimat, stok sorgusu\n- odeme_kampanya: Ödeme yöntemi, kampanya sorusu\n- iade_garanti: Ürünü GERİ GÖNDERME, PARA İADESİ, DEĞİŞİM veya GARANTİ SÜRECİ ile ilgili sorular\n- faq: Genel sıkça sorulan soru (hesap, şifre, fatura, teknik sorunlar, VEYA veri gizliliği/\nKVKK/verilerin nasıl kullanıldığı ile ilgili sorular)\n- belirsiz: Hiçbirine net uymuyorsa\n\nSINIFLANDIRMA ÖNCELİK SIRASI (yukarıdan aşağıya kontrol et, ilk uyan kuralı kullan):\n\n1. Eğer mesajda \"yorum\", \"değerlendirme\", \"puan\" veya \"yıldız\" kelimelerinden biri, \"yaz\",\n   \"ver\", \"ekle\", \"yap\" gibi bir eylem fiiliyle BİRLİKTE geçiyorsa (örn: \"yorum yazmak\n   istiyorum\", \"5 yıldız vermek istiyorum\", \"değerlendirme eklemek istiyorum\") →\n   KESİNLİKLE \"yorum_analiz\". Bu kural iade_garanti'den her zaman önceliklidir.\n\n2. Eğer mesajda \"iade\", \"geri gönder\", \"para iadesi\", \"değişim\", \"garanti\" kelimelerinden\n   biri geçiyorsa (ve 1. kural uymuyorsa) → \"iade_garanti\".\n\n3. Eğer mesajda \"arıyorum\", \"lazım\", \"ihtiyacım var\", \"bakıyorum\" gibi NET bir yeni ürün\n   arama ifadesi varsa → \"urun_kesif\". (\"istiyorum\" tek başına bu kuralı TETİKLEMEZ, çünkü\n   çok genel bir kelime - başka bağlamlarda da kullanılır.)\n\n4. Konuşma geçmişindeki EN SON asistan mesajı bir karşılaştırma kriteri soruyorsa (mesajda\n   \"karşılaştır\", \"kriter\", \"sizin için en önemli olan\" gibi ifadeler geçiyorsa) VE\n   kullanıcının şu anki mesajı buna bir cevap niteliğindeyse (bütçe/kalite/özellik tercihi\n   belirtiyorsa) → \"karsilastirma\".\n\n5. Yukarıdakilerin hiçbiri kesin uymuyorsa, mesajın genel anlamına göre en uygun kategoriyi\n   seç, hiçbiri uymuyorsa \"belirsiz\".\n\nSadece kategori adını döndür, başka açıklama ekleme."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -544,
+        1680
+      ],
+      "id": "683deac0-1ae1-4a1f-b790-75f8b2801e4c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -656,
+        1872
+      ],
+      "id": "f17bf222-cf7d-4294-8601-373cac18942b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        -448,
+        1872
+      ],
+      "id": "6fe1877f-5748-4f83-8324-51bdbbda169e",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1312,
+        720
+      ],
+      "id": "410c64f6-1f96-469f-af35-8baa689f669c",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        3152,
+        688
+      ],
+      "id": "33459515-67a3-4bdd-91bf-e9ef77b0afd4",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1328,
+        1232
+      ],
+      "id": "cdd3cfa1-3f07-4125-baf4-1ae1dab1e957",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1312,
+        160
+      ],
+      "id": "d22adb4b-5f1c-4ce1-a22f-6b94e4fcb226",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        3920,
+        1760
+      ],
+      "id": "b727ad10-f64d-4d08-89ab-dbdc7f336bea",
+      "name": "OpenAI Chat Model5",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Kullanıcının mesajından ürün arama bilgilerini çıkar ve SADECE aşağıdaki JSON formatında\nyanıt ver. Markdown kod bloğu (```), açıklama veya başka hiçbir şey ekleme - SADECE ham\nJSON döndür.\n\nKullanıcı mesajı: {{ $('When chat message received').item.json.chatInput }}\n\nÇıkarman gereken alanlar:\n- query: Kullanıcının aradığı ürünün ana adı/tipi, sadece ürün kelimesi (örn: 'kulaklık'),\n  fiyat/bütçe ifadeleri hariç (string, yoksa \"\")\n- butce: Kullanıcının belirttiği bütçe/fiyat üst sınırı (TL), sayı olarak. Belirtilmemişse 0\n- kategori: Ürünün ait olabileceği ana kategori (Kadın, Erkek, Elektronik, Kozmetik, vb).\n  Emin değilsen \"\" bırak\n\nTam olarak bu formatta döndür (başka hiçbir metin ekleme):\n{\"query\": \"...\", \"butce\": 0, \"kategori\": \"...\"}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1312,
+        -16
+      ],
+      "id": "3d65d946-ba74-4efb-a41f-efd82f200b5a",
+      "name": "Arama Kriterleri Çıkar (AI)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// LLM'in çıktısını (bazen ```json ile sarılmış, bazen ham) güvenli şekilde JSON'a çevirir.\n// Yorum analizi dalındaki parse-review-extraction.js ile aynı savunmacı mantık.\n\nconst rawText = $input.first().json.text || $input.first().json.output || \"\";\n\nfunction guvenliJsonAyristir(text) {\n  let temiz = text.trim();\n  temiz = temiz.replace(/^```json\\s*/i, \"\").replace(/^```\\s*/, \"\").replace(/```\\s*$/, \"\");\n  temiz = temiz.trim();\n\n  try {\n    return JSON.parse(temiz);\n  } catch (e) {\n    const match = temiz.match(/\\{[\\s\\S]*\\}/);\n    if (match) {\n      try {\n        return JSON.parse(match[0]);\n      } catch (e2) {\n        return null;\n      }\n    }\n    return null;\n  }\n}\n\nconst parsed = guvenliJsonAyristir(rawText);\n\nif (!parsed) {\n  return [{\n    json: {\n      query: \"\",\n      butce: 0,\n      kategori: \"\",\n      ayristirma_hatasi: true,\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    query: parsed.query || \"\",\n    butce: parsed.butce || 0,\n    kategori: parsed.kategori || \"\",\n    ayristirma_hatasi: false,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        -16
+      ],
+      "id": "8a42e516-c6d7-4422-8ab2-81eeebd7672d",
+      "name": "JSON Güvenli Ayrıştır",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://shop-product-api:8000/products/recommend",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"{{ $json.query }}\",\n  \"kategori\": \"{{ $json.kategori }}\",\n  \"butce\": {{ $json.butce }},\n  \"limit\": 5\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1872,
+        -16
+      ],
+      "id": "9f1eb57b-6b8d-46df-a9f5-464688dc7c29",
+      "name": "Ürün Önerisi Getir (API)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTTP Request'ten gelen ürün önerilerini kullanıcı dostu Markdown \"kart\" formatına çevirir\nconst response = $input.first().json;\nconst oneriler = response.oneriler || [];\n\nif (oneriler.length === 0) {\n  return [{\n    json: {\n      output: \"😕 Aradığınız kriterlere uygun bir ürün bulamadım. Bütçenizi veya kategori tercihinizi değiştirmek ister misiniz?\"\n    }\n  }];\n}\n\nconst kategoriEmoji = {\n  \"Elektronik\": \"🔌\", \"Kadın\": \"👗\", \"Erkek\": \"👔\", \"Kozmetik\": \"💄\",\n  \"Ayakkabı & Çanta\": \"👜\", \"Ev & Yaşam\": \"🏠\", \"Spor & Outdoor\": \"⚽\",\n  \"Anne & Çocuk\": \"🧸\", \"Süpermarket\": \"🛒\", \"Saat & Aksesuar\": \"⌚\"\n};\n\nconst kartlar = oneriler.map((urun, index) => {\n  // Kategori Erkek/Kadın gibi olsa bile alt kategori \"Elektronik\" ise elektronik emojisi kullan\n  const emoji = urun.alt_kategori === \"Elektronik\"\n    ? \"🔌\"\n    : (kategoriEmoji[urun.ana_kategori] || \"🛍️\");\n  const fiyatFormatli = urun.fiyat.toLocaleString('tr-TR', { minimumFractionDigits: 2 });\n  const stokMetni = urun.stok_durumu === \"STOKTA\" ? \"✅ Stokta\" : \"❌ Stokta yok\";\n\n  return `**${index + 1}. ${emoji} ${urun.urun_adi}**\n\n- Marka: ${urun.marka}\n- Fiyat: **${fiyatFormatli} TL**\n- Puan: ⭐ ${urun.puan}/5 (${urun.yorum_sayisi} değerlendirme)\n- Durum: ${stokMetni}\n- Neden önerdim: ${urun.oneri_gerekcesi}`;\n}).join(\"\\n\\n———————————————\\n\\n\");\n\nconst baslik = `Size uygun ${oneriler.length} ürün buldum:\\n\\n`;\n\nreturn [{\n  json: {\n    output: baslik + kartlar\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        -16
+      ],
+      "id": "d2a17112-a4eb-41a5-bfc1-e320027f9f9c",
+      "name": "Sonuçları Kart Formatına Çevir"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=last_products:{{ $('When chat message received').item.json.sessionId }}",
+        "value": "={{ JSON.stringify($('Ürün Önerisi Getir (API)').item.json.oneriler) }}",
+        "expire": true,
+        "ttl": 1800
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2304,
+        -16
+      ],
+      "id": "6a18f515-c9f2-4ab3-bc27-947b11ba1147",
+      "name": "Son Önerilen Ürünleri Kaydet",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "secim_1",
+              "description": "Kullanıcının karşılaştırmak istediği birinci ürünün adı veya listedeki sıra numarası (örn: 'Apple', '1', 'kulaklık'). Belirtilmemişse boş bırak."
+            },
+            {
+              "name": "secim_2",
+              "description": "Kullanıcının karşılaştırmak istediği ikinci ürünün adı veya listedeki sıra numarası. Belirtilmemişse boş bırak."
+            },
+            {
+              "name": "kriterler",
+              "description": "Kullanıcının karşılaştırmada önemsediği özellikler varsa virgülle ayrılmış liste (örn:  'uygun fiyat, kalıcı, su geçirmez'). Belirtilmemişse SADECE boş string \"\" döndür,  kesinlikle \"empty\", \"yok\", \"belirtilmedi\" gibi bir kelime YAZMA."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        1312,
+        528
+      ],
+      "id": "7ba22d18-90c4-4d17-9a28-aafc76b79679",
+      "name": "Karşılaştırma Bilgisi Çıkar (AI)",
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=last_products:{{ $('When chat message received').item.json.sessionId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        528
+      ],
+      "id": "b1f405cd-0b75-42a6-8427-08f75bd10301",
+      "name": "Son Önerilen Ürünleri Oku",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=pending_compare:{{ $('When chat message received').item.json.sessionId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1872,
+        528
+      ],
+      "id": "1a4ab6cf-e023-4559-843f-845a71aea4a3",
+      "name": "Bekleyen Karşılaştırmayı Oku",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Kullanıcının \"1\", \"3\" gibi sıra numarası veya \"Apple\" gibi isim/marka belirtmesini\n// gerçek ürün ID'sine çevirir. Redis'teki son öneri listesine bakar.\n// EK: Kullanıcı bu mesajda ürün seçimini tekrar belirtmemişse (örn. sadece kritere\n// cevap veriyorsa), Redis'teki \"bekleyen karşılaştırma\" kaydına bakarak hangi iki\n// üründen bahsedildiğini hatırlar - çok turlu konuşma bağlamı için kritik.\n\nconst extractorOutput = $('Karşılaştırma Bilgisi Çıkar (AI)').first().json.output;\nconst secim1 = (extractorOutput.secim_1 || \"\").trim();\nconst secim2 = (extractorOutput.secim_2 || \"\").trim();\n\nfunction parseRedisJson(nodeJson) {\n  try {\n    const redisValue = nodeJson.value ?? nodeJson.data ?? nodeJson.propertyName ?? nodeJson[Object.keys(nodeJson)[0]];\n    const parsed = typeof redisValue === \"string\" ? JSON.parse(redisValue) : redisValue;\n    return parsed || null;\n  } catch (e) {\n    return null;\n  }\n}\n\n// last_products listesi (Redis1 node'undan)\nlet lastProducts = parseRedisJson($('Son Önerilen Ürünleri Oku').first().json);\nif (!Array.isArray(lastProducts)) lastProducts = [];\n\nfunction urunBul(secim) {\n  if (!secim || lastProducts.length === 0) return null;\n  const sayi = parseInt(secim, 10);\n  if (!isNaN(sayi) && sayi >= 1 && sayi <= lastProducts.length) {\n    return lastProducts[sayi - 1];\n  }\n  const normalizedSecim = secim.toLowerCase();\n  const eslesme = lastProducts.find(p =>\n    p.urun_adi.toLowerCase().includes(normalizedSecim) ||\n    p.marka.toLowerCase().includes(normalizedSecim)\n  );\n  return eslesme || null;\n}\n\nlet id1 = null, id2 = null;\n\nif (secim1 && secim2) {\n  // Bu mesajda ürün seçimi açıkça belirtilmiş\n  const urun1 = urunBul(secim1);\n  const urun2 = urunBul(secim2);\n  if (urun1 && urun2) {\n    id1 = urun1.id;\n    id2 = urun2.id;\n  }\n} else {\n  // Bu mesajda seçim yok - muhtemelen önceki soruya (kritere) cevap veriyor.\n  // Redis'teki bekleyen karşılaştırma kaydına bak.\n  const pending = parseRedisJson($('Bekleyen Karşılaştırmayı Oku').first().json);\n  if (pending && pending.id1 && pending.id2) {\n    id1 = pending.id1;\n    id2 = pending.id2;\n  }\n}\n\nif (!id1 || !id2) {\n  return [{\n    json: {\n      hata: true,\n      mesaj: \"İki ürünü de net olarak belirleyemedim. Önce Ürün Keşif ile birkaç seçenek görmemiz, sonra 'ilk ürün ile ikincisini karşılaştır' gibi net bir ifade kullanmanız gerekiyor.\"\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    hata: false,\n    id1,\n    id2,\n    ids: `${id1},${id2}`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        528
+      ],
+      "id": "782f740c-d3ea-479d-883a-9ea7a1daba45",
+      "name": "Ürün ID'lerini Çöz"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=pending_compare:{{ $('When chat message received').item.json.sessionId }}",
+        "value": "={{ JSON.stringify({id1: $json.id1, id2: $json.id2}) }}",
+        "expire": true,
+        "ttl": 600
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2304,
+        528
+      ],
+      "id": "5ce258ef-6758-4c64-a3ee-911c70529efd",
+      "name": "Bekleyen Karşılaştırmayı Kaydet",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=http://shop-product-api:8000/products/compare?ids={{ $json.ids }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2512,
+        528
+      ],
+      "id": "cb376158-24c4-456e-b3f7-2f890b85f50c",
+      "name": "Karşılaştırma Verisini Getir (API)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ae1dec93-b2f0-46a8-b1ad-1e7711954fdb",
+              "leftValue": "={{ !$('Karşılaştırma Bilgisi Çıkar (AI)').item.json.output.kriterler || $('Karşılaştırma Bilgisi Çıkar (AI)').item.json.output.kriterler.trim().toLowerCase() === 'empty' || $('Karşılaştırma Bilgisi Çıkar (AI)').item.json.output.kriterler.trim() === '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2704,
+        528
+      ],
+      "id": "858802e8-9b75-41dc-b8cb-ba6e622a8374",
+      "name": "If - Kriter Belirtilmiş mi?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Kriter belirtilmemiş durumda kullanılır. LLM'e bırakmadan, doğrudan ve güvenilir\n// şekilde kullanıcıya soru soruyoruz - bu bir kontrol akışı kararı, LLM'in \"hissine\"\n// bırakılmayacak kadar kritik.\n\nconst response = $('Karşılaştırma Verisini Getir (API)').first().json;\n\nif (!response.urunler || response.urunler.length < 2) {\n  return [{ json: { output: \"Karşılaştırma için ürünleri bulamadım, tekrar dener misiniz?\" } }];\n}\n\nconst [urun1, urun2] = response.urunler;\n\nconst soru = `**${urun1.urun_adi}** ile **${urun2.urun_adi}**'ı karşılaştıralım.\n\nSizin için en önemli olan ne? Örneğin:\n- Fiyat mı önemli, yoksa kalite/puan mı?\n- Aradığınız özel bir özellik var mı? (örn: su geçirmez, uzun ömürlü, kalıcı)\n\nBunu söylerseniz, hangisinin size daha uygun olduğunu net şekilde gösterebilirim.`;\n\nreturn [{ json: { output: soru } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        400
+      ],
+      "id": "9691ef5d-96e5-42a7-8dc1-e22e12edeb5a",
+      "name": "Kriter Sor (Deterministik)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Karşılaştırma tablosunu kod bloğu içinde, sabit genişlikli (monospace) ve hizalı\n// olarak üretir. LLM'e bırakmıyoruz çünkü karakter hizalama bir kod problemi, dil\n// üretimi problemi değil - LLM'ler boşluk sayısını tutturmakta güvenilir değil.\n// n8n chat paneli markdown tabloyu (|...|) render etmediği için bu yaklaşım şart.\n\nconst response = $('Karşılaştırma Verisini Getir (API)').first().json;\nconst [urun1, urun2] = response.urunler;\n\nconst fiyatFmt = (f) => f.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) + \" TL\";\n\nconst satirlar = [\n  [\"Kriter\", urun1.marka, urun2.marka],\n  [\"Fiyat\", fiyatFmt(urun1.fiyat), fiyatFmt(urun2.fiyat)],\n  [\"Puan\", `${urun1.puan}/5`, `${urun2.puan}/5`],\n  [\"Yorum\", String(urun1.yorum_sayisi), String(urun2.yorum_sayisi)],\n  [\"Stok\", urun1.stok_durumu === \"STOKTA\" ? \"Var\" : \"Yok\", urun2.stok_durumu === \"STOKTA\" ? \"Var\" : \"Yok\"],\n];\n\n// Her sütun için en uzun metne göre genişlik hesapla (hizalama için)\nconst col1Width = Math.max(...satirlar.map(r => r[0].length)) + 2;\nconst col2Width = Math.max(...satirlar.map(r => r[1].length)) + 2;\nconst col3Width = Math.max(...satirlar.map(r => r[2].length)) + 2;\n\nfunction pad(text, width) {\n  return text + \" \".repeat(Math.max(0, width - text.length));\n}\n\nconst tabloSatirlari = satirlar.map((r, i) => {\n  const line = pad(r[0], col1Width) + pad(r[1], col2Width) + r[2];\n  if (i === 0) {\n    const ayirac = \"-\".repeat(col1Width + col2Width + col3Width);\n    return line + \"\\n\" + ayirac;\n  }\n  return line;\n});\n\nconst asciiTablo = \"**\" + urun1.marka + \" vs \" + urun2.marka + \"**\\n```\\n\" + tabloSatirlari.join(\"\\n\") + \"\\n```\";\n\n// --- Özellik bazlı karşılaştırma (ikinci tablo) ---\n// Her iki ürünün TÜM özelliklerini birleştirip, hangisinde hangi özellik var diye\n// ✓/✗ ile gösteriyoruz. Bu tamamen gerçek veriye dayalı, deterministik bir eşleştirme\n// (kullanıcının serbest metin kriterini yorumlamaya çalışmıyoruz, ürünün kendi\n// özellik listesini kullanıyoruz).\nconst tumOzellikler = [...new Set([...(urun1.ozellikler || []), ...(urun2.ozellikler || [])])];\n\nlet ozellikTablosu = \"\";\nif (tumOzellikler.length > 0) {\n  const ozSatirlari = tumOzellikler.map(oz => {\n    const has1 = (urun1.ozellikler || []).includes(oz) ? \"✓\" : \"✗\";\n    const has2 = (urun2.ozellikler || []).includes(oz) ? \"✓\" : \"✗\";\n    return [oz, has1, has2];\n  });\n\n  const ozCol1 = Math.max(...ozSatirlari.map(r => r[0].length), \"Özellik\".length) + 2;\n  const ozCol2 = urun1.marka.length + 2;\n  const ozCol3 = urun2.marka.length + 2;\n\n  const ozBaslik = pad(\"Özellik\", ozCol1) + pad(urun1.marka, ozCol2) + urun2.marka;\n  const ozAyirac = \"-\".repeat(ozCol1 + ozCol2 + ozCol3);\n  const ozSatirMetinleri = ozSatirlari.map(r => pad(r[0], ozCol1) + pad(r[1], ozCol2) + r[2]);\n\n  ozellikTablosu = \"\\n\\n**Özellik Karşılaştırması**\\n```\\n\" + ozBaslik + \"\\n\" + ozAyirac + \"\\n\" + ozSatirMetinleri.join(\"\\n\") + \"\\n```\";\n}\n\nconst tamTablo = asciiTablo + ozellikTablosu;\n\nreturn [{\n  json: {\n    asciiTablo: tamTablo,\n    urun1_adi: urun1.urun_adi,\n    urun2_adi: urun2.urun_adi\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        624
+      ],
+      "id": "ddf49ff0-b6c8-4b09-bc70-5848a3403a3c",
+      "name": "Karşılaştırma Tablosu Oluştur"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Aşağıda iki ürünün GERÇEK katalog verisi var. Kullanıcı bu iki ürün için bir tercih/kriter\nbelirtti. ChatGPT/Claude tarzında, doğal ve akıcı bir tavsiye metni yaz.\n\nÖNEMLİ: Tabloyu SEN üretme - hem genel bilgi tablosu hem de özellik karşılaştırma tablosu\n(✓/✗ ile) ayrıca, kod ile hazırlanıp senin metninin başına otomatik eklenecek. Sen SADECE\naşağıdaki 3-6. adımlardaki anlatım metnini yaz, özellikleri tekrar liste olarak sayma\n(zaten tabloda ✓/✗ ile gösterilecek), sadece bu özelliklere dayanarak YORUM yap. Çıktının\nbaşında hiçbir tablo, başlık, \"İşte karşılaştırma\" gibi bir giriş YAZMA - direkt senaryo\nanlatımıyla başla.\n\nKESIN KURALLAR:\n- Sadece aşağıda verilen gerçek veriyi kullan. Uydurma marka, model, alt-kategori puanı\n  (örn. \"ses kalitesi 4 yıldız\" gibi bizde olmayan bir veri) ASLA ekleme.\n- Kullanıcıyla DOĞRUDAN konuş (siz/sen dili). YASAK ifadeler: \"kullanıcının isteği\n  doğrultusunda\", \"kullanıcının belirttiği kritere göre\", \"kullanıcı için\" gibi üçüncü\n  şahıs anlatımı KESİNLİKLE kullanma.\n- Kullanıcı zaten bir kriter/tercih belirtti (aşağıda), bu yüzden KESİNLİKLE net bir tavsiye\n  ver - tekrar soru sorma, tereddüt etme.\n\nKullanıcının belirttiği kriter: {{ $('Karşılaştırma Bilgisi Çıkar (AI)').item.json.output.kriterler }}\n\nÜrün 1 (JSON): {{ JSON.stringify($('Karşılaştırma Verisini Getir (API)').item.json.urunler[0]) }}\n\nÜrün 2 (JSON): {{ JSON.stringify($('Karşılaştırma Verisini Getir (API)').item.json.urunler[1]) }}\n\nDiğer Alternatifler (bu ikisi dışında, daha önce önerilen diğer ürünler - istersen bunlardan\nda 1 tanesini \"bütçe dostu alternatif\" olarak önerebilirsin, ASLA listede olmayan bir ürün\nuydurma): {{ JSON.stringify($('Son Önerilen Ürünleri Oku').item.json) }}\n\nYazacağın metin şu adımları takip etsin:\n3. ZENGİN, SENARYO BAZLI ANLATIM: Gerçek özellik listesindeki (ozellikler) maddeleri kullanarak\n   doğal bir anlatım kur - \"Eğer [gerçek özellikten türeyen bir ihtiyaç] önemliyse X'i tercih\n   edin, çünkü [gerçek özelliği] var\" gibi. Bu YORUM senin çıkarımın olabilir ama dayandığı\n   ÖZELLİK gerçek olmalı. 2-4 kısa senaryo/karşılaştırma cümlesi yaz, ChatGPT tarzı doğal\n   ve akıcı olsun.\n4. Net bir sonuç tavsiyesi: \"Sizin belirttiğiniz [kritere] göre X daha mantıklı çünkü...\"\n5. SADECE \"Diğer Alternatifler\" listesinde GERÇEKTEN var olan bir ürün varsa, onu ek seçenek\n   olarak öner. Listede olmayan HİÇBİR ürünü ASLA önerme.\n6. Nazik, kısa bir kapanış sorusu (isteğe bağlı, sadece gerçekten faydalıysa sor)\n\nSadece bu anlatım metnini döndür, tablo veya başka açıklama ekleme.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        3152,
+        512
+      ],
+      "id": "3ca1affe-d576-4efd-8770-b70ad84a940b",
+      "name": "Karşılaştırma Anlatımı Üret (AI)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tablo ve LLM'in ürettiği anlatım metnini birleştirir. Set/Edit Fields node yerine\n// Code node kullanıyoruz çünkü JS'te \\n her zaman gerçek satır sonudur - n8n'in\n// Set node arayüzünde bu bazen literal metin olarak kalabiliyor.\n\n// NOT: Node ismini kendi workflow'undaki gerçek isimle değiştir (örn. 'Code in JavaScript3')\nconst tabloNode = $('Karşılaştırma Tablosu Oluştur').first().json;\nconst llmCiktisi = $input.first().json;\n\nconst anlatimMetni = llmCiktisi.text || llmCiktisi.output || \"\";\n\nconst nihaiMetin = tabloNode.asciiTablo + \"\\n\\n\" + anlatimMetni;\n\nreturn [{ json: { output: nihaiMetin } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3472,
+        512
+      ],
+      "id": "7bdcec7d-74cd-4279-bf80-3a1f717a12a2",
+      "name": "Tablo ve Anlatımı Birleştir"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Kullanıcının mesajından şu bilgileri çıkar ve SADECE aşağıdaki JSON formatında yanıt ver.\nMarkdown kod bloğu (```), açıklama veya başka hiçbir şey ekleme - SADECE ham JSON döndür.\n\nKullanıcı mesajı: {{ $('When chat message received').item.json.chatInput }}\n\nÇıkarman gereken alanlar:\n- urun_referansi: Kullanıcının yorumlarını sormak istediği ürünün adı veya sıra numarası (string, yoksa \"\")\n- yeni_yorum_ekleniyor_mu: Kullanıcı yeni bir yorum YAZMAK/EKLEMEK istiyorsa \"evet\", değilse \"hayir\"\n- yeni_yorum_metni: Eğer yorum ekliyorsa, kullanıcının GERÇEKTEN yazmak istediği yorum\n  metni - tercihen tırnak içinde verilmiş olan kısım. ÖNEMLİ: Eğer kullanıcı sadece \"yorum\n  yapmak istiyorum\", \"değerlendirme yazmak istiyorum\" gibi bir niyet belirtip asıl yorum\n  İÇERİĞİNİ belirtmediyse, bu alanı BOŞ bırak (\"\") - \"yorum yapmak istiyorum\" gibi niyet\n  ifadelerini ASLA yorum metni olarak alma.\n- yeni_yorum_yildiz: Eğer bir puan belirttiyse 1-5 arası sayı (number, yoksa 0)\n- kullanici_adi: Eğer kullanıcı kendi adını belirttiyse (örn: \"Adım Ahmet Yılmaz\") o isim (string, yoksa \"\")\n- yorum_siliniyor_mu: Kullanıcı kendi yazdığı bir yorumu SİLMEK/KALDIRMAK istiyorsa \"evet\",\n  değilse \"hayir\" (örn: \"yorumumu sil\", \"yaptığım yorumu kaldırmak istiyorum\")\n- silme_ipucu: Eğer yorum siliniyorsa, kullanıcının hangi yorumu kastettiğini anlamamıza\n  yardımcı olacak bir ipucu - yorumun içeriğinden bir kısım veya yazarın adı (string, yoksa \"\")\n- uygunsuz_icerik_mi: Eğer yorum ekleniyorsa VE yorum metni küfür, hakaret, cinsel içerik\n  veya nefret söylemi içeriyorsa \"evet\", metin uygunsa veya yorum eklenmiyorsa \"hayir\"\n\nTam olarak bu formatta döndür (başka hiçbir metin ekleme):\n{\"urun_referansi\": \"...\", \"yeni_yorum_ekleniyor_mu\": \"...\", \"yeni_yorum_metni\": \"...\", \"yeni_yorum_yildiz\": 0, \"kullanici_adi\": \"...\", \"yorum_siliniyor_mu\": \"...\", \"silme_ipucu\": \"...\", \"uygunsuz_icerik_mi\": \"...\"}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1328,
+        1056
+      ],
+      "id": "2ccc9316-ad25-461b-b097-7c1a8986c703",
+      "name": "Yorum Bilgisi Çıkar (AI)",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// LLM'in çıktısını (bazen ```json ile sarılmış, bazen ham) güvenli şekilde JSON'a çevirir.\n// Bu, n8n'in Information Extractor node'undaki katı/kırılgan parser'ın aksine, hataya\n// toleranslı - format biraz bozuk olsa bile elimizden geldiğince düzeltmeye çalışır.\n\nconst rawText = $input.first().json.text || $input.first().json.output || \"\";\n\nfunction guvenliJsonAyristir(text) {\n  // 1. Markdown kod bloğu işaretlerini temizle (```json ... ``` veya ``` ... ```)\n  let temiz = text.trim();\n  temiz = temiz.replace(/^```json\\s*/i, \"\").replace(/^```\\s*/, \"\").replace(/```\\s*$/, \"\");\n  temiz = temiz.trim();\n\n  try {\n    return JSON.parse(temiz);\n  } catch (e) {\n    // 2. Metin içinde bir yerde { ... } varsa onu yakalamayı dene (son çare)\n    const match = temiz.match(/\\{[\\s\\S]*\\}/);\n    if (match) {\n      try {\n        return JSON.parse(match[0]);\n      } catch (e2) {\n        return null;\n      }\n    }\n    return null;\n  }\n}\n\nconst parsed = guvenliJsonAyristir(rawText);\n\nif (!parsed) {\n  // Ayrıştırma tamamen başarısız olursa güvenli varsayılan değerler döndür,\n  // sistem çökmesin\n  return [{\n    json: {\n      urun_referansi: \"\",\n      yeni_yorum_ekleniyor_mu: \"hayir\",\n      yeni_yorum_metni: \"\",\n      yeni_yorum_yildiz: 0,\n      kullanici_adi: \"\",\n      yorum_siliniyor_mu: \"hayir\",\n      silme_ipucu: \"\",\n      uygunsuz_icerik_mi: \"hayir\",\n      ayristirma_hatasi: true,\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    urun_referansi: parsed.urun_referansi || \"\",\n    yeni_yorum_ekleniyor_mu: parsed.yeni_yorum_ekleniyor_mu || \"hayir\",\n    yeni_yorum_metni: parsed.yeni_yorum_metni || \"\",\n    yeni_yorum_yildiz: parsed.yeni_yorum_yildiz || 0,\n    kullanici_adi: parsed.kullanici_adi || \"\",\n    yorum_siliniyor_mu: parsed.yorum_siliniyor_mu || \"hayir\",\n    silme_ipucu: parsed.silme_ipucu || \"\",\n    uygunsuz_icerik_mi: parsed.uygunsuz_icerik_mi || \"hayir\",\n    ayristirma_hatasi: false,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        1056
+      ],
+      "id": "913e091a-de74-4810-ba9c-43aebcf4ded8",
+      "name": "JSON Güvenli Ayrıştır1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=last_products:{{ $('When chat message received').item.json.sessionId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1888,
+        1056
+      ],
+      "id": "2365a652-58aa-4a2a-a86f-bdd4ca323e10",
+      "name": "Son Önerilen Ürünleri Oku1",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=last_active_product:{{ $('When chat message received').item.json.sessionId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2112,
+        1056
+      ],
+      "id": "d28c1ef4-cf28-4c84-a810-832fb36253d5",
+      "name": "Son Aktif Ürünü Oku",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Kullanıcının \"Apple\", \"aplle\" (yazım hatalı), \"1\" gibi belirttiği ürün referansını\n// gerçek ürün ID'sine çevirir. Yazım hatalarına karşı Levenshtein mesafesi kullanılır.\n// Eğer kullanıcı bu mesajda hiç ürün belirtmediyse (örn. \"yorum içeriğim şuydu\" gibi kısa\n// bir takip mesajı), en son konuşulan ürünü Redis'ten hatırlar - kullanıcı her seferinde\n// ürün adını tekrar yazmak zorunda kalmasın diye.\n\n// ÖNEMLİ: Bu node'un doğrudan girişi artık \"son aktif ürün\" Redis node'u. last_products\n// listesine ayrıca isimle referans veriyoruz. Node isimlerini kendi workflow'una göre uyarla.\nconst extractorOutput = $('JSON Güvenli Ayrıştır1').first().json;\nconst referans = (extractorOutput.urun_referansi || \"\").trim();\n\nfunction parseRedisJson(nodeJson) {\n  try {\n    const redisValue = nodeJson.value ?? nodeJson.data ?? nodeJson.propertyName ?? nodeJson[Object.keys(nodeJson)[0]];\n    if (typeof redisValue !== \"string\") return redisValue || null;\n    try {\n      return JSON.parse(redisValue);\n    } catch (e) {\n      // JSON değilse, düz bir string olabilir (örn. sadece \"P0743\" gibi bir ürün ID'si)\n      return redisValue;\n    }\n  } catch (e) {\n    return null;\n  }\n}\n\nlet lastProducts = parseRedisJson($('Son Önerilen Ürünleri Oku1').first().json);\nif (!Array.isArray(lastProducts)) lastProducts = [];\n\n// Bu node'un doğrudan girişi \"son aktif ürün\" Redis node'u\nconst sonAktifUrunId = parseRedisJson($input.first().json);\n\n// --- Levenshtein mesafesi: yazım hatalarına tolerans için ---\nfunction levenshtein(a, b) {\n  const m = a.length, n = b.length;\n  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));\n  for (let i = 0; i <= m; i++) dp[i][0] = i;\n  for (let j = 0; j <= n; j++) dp[0][j] = j;\n  for (let i = 1; i <= m; i++) {\n    for (let j = 1; j <= n; j++) {\n      dp[i][j] = a[i - 1] === b[j - 1]\n        ? dp[i - 1][j - 1]\n        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);\n    }\n  }\n  return dp[m][n];\n}\n\nfunction benzerMi(a, b, esik = 2) {\n  return levenshtein(a, b) <= esik;\n}\n\nfunction urunBul(ref) {\n  if (!ref || lastProducts.length === 0) return null;\n\n  const sayi = parseInt(ref, 10);\n  if (!isNaN(sayi) && sayi >= 1 && sayi <= lastProducts.length) {\n    return lastProducts[sayi - 1];\n  }\n\n  const normalizedRef = ref.toLowerCase();\n\n  // 1. Önce tam/kısmi eşleşme dene (hızlı ve kesin)\n  let eslesme = lastProducts.find(p =>\n    p.urun_adi.toLowerCase().includes(normalizedRef) ||\n    p.marka.toLowerCase().includes(normalizedRef)\n  );\n  if (eslesme) return eslesme;\n\n  // 2. Bulamazsa, yazım hatası olabilir - marka adına Levenshtein mesafesiyle bak\n  eslesme = lastProducts.find(p => benzerMi(normalizedRef, p.marka.toLowerCase()));\n  return eslesme || null;\n}\n\nlet urun = urunBul(referans);\n\n// Bu mesajda ürün belirtilmemişse (referans boş), en son konuşulan ürünü hatırla\nif (!urun && !referans && sonAktifUrunId) {\n  urun = lastProducts.find(p => p.id === sonAktifUrunId) || null;\n  if (!urun) {\n    // last_products'ta yoksa bile, en azından ID'yi biliyoruz - minimal bir obje kur\n    urun = { id: sonAktifUrunId, urun_adi: extractorOutput.urun_referansi || \"ürün\" };\n  }\n}\n\nif (!urun) {\n  return [{\n    json: {\n      hata: true,\n      mesaj: \"Hangi ürünü kastettiğinizi anlayamadım. Ürünün adını belirtebilir misiniz? (örn: 'Apple hakkındaki yorumları göster')\"\n    }\n  }];\n}\n\n// --- Ekleme dalına özel kontroller (silme işlemini ASLA etkilemez) ---\nif (extractorOutput.yeni_yorum_ekleniyor_mu === \"evet\") {\n  if (extractorOutput.uygunsuz_icerik_mi === \"evet\") {\n    return [{\n      json: {\n        hata: true,\n        urun_id: urun.id,\n        mesaj: \"Bu yorumu yayınlayamıyorum çünkü uygunsuz/saygısız bir dil içeriyor gibi görünüyor. Deneyiminizi daha yapıcı bir dille ifade ederseniz memnuniyetle ekleyebilirim.\"\n      }\n    }];\n  }\n  if (!extractorOutput.yeni_yorum_metni || !extractorOutput.yeni_yorum_metni.trim()) {\n    return [{\n      json: {\n        hata: true,\n        urun_id: urun.id,\n        mesaj: `${urun.urun_adi} için yorum eklemek istediğinizi anladım, ama ne yazmak istediğinizi tam anlayamadım. Yorumunuzu tırnak içinde belirtir misiniz? Örnek: \"Ürün gerçekten kaliteli, tavsiye ederim\" gibi.`\n      }\n    }];\n  }\n}\n\n// --- KVKK: Kullanıcının tam adını gizlilik için maskele (örn. 'Nidanur Sığırta' -> 'Nidanur S.') ---\nfunction adiMaskele(tamAd) {\n  if (!tamAd) return \"\";\n  const parcalar = tamAd.trim().split(/\\s+/);\n  if (parcalar.length === 1) return parcalar[0];\n  const ad = parcalar[0];\n  const soyadBasHarfi = parcalar[parcalar.length - 1][0];\n  return `${ad} ${soyadBasHarfi}.`;\n}\n\nreturn [{\n  json: {\n    hata: false,\n    urun_id: urun.id,\n    urun_adi: urun.urun_adi,\n    yeni_yorum_ekleniyor_mu: extractorOutput.yeni_yorum_ekleniyor_mu,\n    yeni_yorum_metni: extractorOutput.yeni_yorum_metni,\n    yeni_yorum_yildiz: extractorOutput.yeni_yorum_yildiz,\n    kullanici_adi: adiMaskele(extractorOutput.kullanici_adi),\n    yorum_siliniyor_mu: extractorOutput.yorum_siliniyor_mu,\n    silme_ipucu: extractorOutput.silme_ipucu,\n    uygunsuz_icerik_mi: extractorOutput.uygunsuz_icerik_mi,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2320,
+        1056
+      ],
+      "id": "7d35c4fe-0910-47ab-b9a2-aaf35ac4a942",
+      "name": "Ürün ID Çöz + İçerik Kontrolü"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=last_active_product:{{ $('When chat message received').item.json.sessionId }}",
+        "value": "={{ $json.urun_id || '' }}",
+        "keyType": "string",
+        "expire": true,
+        "ttl": 1800
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        1056
+      ],
+      "id": "73068bcc-2cef-46fd-87cd-2362f2e8c3af",
+      "name": "Son Aktif Ürünü Kaydet",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "70b2ae91-b78e-42e3-9411-62f398a318ec",
+              "leftValue": "={{ $json.hata }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2720,
+        1056
+      ],
+      "id": "6e1831b6-6603-4c7d-b0d9-c9e72fba14ee",
+      "name": "If - Hata Var mı?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code in JavaScript6'nın (ürün ID çözme) çıktısına bakar. Eğer ürün bulunamadıysa VEYA\n// içerik uygunsuzsa, kullanıcıya nazik bir mesaj gösterip akışı burada durdurur -\n// downstream node'ların undefined urun_id ile çökmesini önler.\n\nconst data = $input.first().json;\n\nif (data.hata) {\n  return [{ json: { output: data.mesaj } }];\n}\n\nif (data.uygunsuz_icerik_mi === \"evet\") {\n  return [{\n    json: {\n      output: \"Bu yorumu yayınlayamıyorum çünkü uygunsuz/saygısız bir dil içeriyor gibi görünüyor. Deneyiminizi daha yapıcı bir dille ifade ederseniz memnuniyetle ekleyebilirim.\"\n    }\n  }];\n}\n\nreturn [{ json: { output: \"Bir sorun oluştu, tekrar dener misiniz?\" } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2928,
+        960
+      ],
+      "id": "90149569-64ad-4b13-a87c-2dbe6b72c85a",
+      "name": "Hata Mesajını Göster"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c335467c-a7a3-4561-b358-98c0784ab671",
+              "leftValue": "={{ $json.yorum_siliniyor_mu }}",
+              "rightValue": "evet",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2928,
+        1184
+      ],
+      "id": "63adbd4a-a3d9-470a-be8b-e9229a448525",
+      "name": "If - Silme mi?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "da6f3d41-23cc-428e-9950-acc507b663a4",
+              "leftValue": "={{ $json.yeni_yorum_ekleniyor_mu }}",
+              "rightValue": "evet",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3184,
+        1408
+      ],
+      "id": "03f40b50-d5f1-40c0-af84-c4812fd77601",
+      "name": "If - Ekleme mi?"
+    },
+    {
+      "parameters": {
+        "url": "=http://shop-product-api:8000/products/{{ $('Ürün ID Çöz + İçerik Kontrolü').item.json.urun_id }}/reviews",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3184,
+        1168
+      ],
+      "id": "e7267c11-7c80-4297-b292-374af5ef01bc",
+      "name": "Yorumları Getir (Silme İçin)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Silinecek yorumu bulur - session hafızasına DEĞİL, gerçek yorum içeriğine bakar.\n// Bu sayede kullanıcı farklı bir oturumda/günde bile \"harika bir ürün diye yazdığım\n// yorumu sil\" dediğinde doğru yorumu bulabiliriz.\n\nconst reviewsResponse = $input.first().json; // GET /reviews cevabı\nconst meta = $('Ürün ID Çöz + İçerik Kontrolü').first().json; // urun_id, silme_ipucu, urun_adi\nconst ipucu = (meta.silme_ipucu || \"\").trim();\n\nfunction normalize(s) {\n  return (s || \"\").toLowerCase()\n    .replace(/ı/g, \"i\").replace(/ş/g, \"s\").replace(/ç/g, \"c\")\n    .replace(/ğ/g, \"g\").replace(/ö/g, \"o\").replace(/ü/g, \"u\");\n}\n\n// Sadece kullanıcı tarafından eklenmiş (statik/seed olmayan) yorumlar silinebilir\nconst kullaniciYorumlari = (reviewsResponse.yorumlar || []).filter(y => y.kaynak === \"kullanici\");\n\nlet hedef = null;\n\nif (ipucu) {\n  const ipucuNorm = normalize(ipucu);\n  hedef = kullaniciYorumlari.find(y =>\n    normalize(y.metin).includes(ipucuNorm) || normalize(y.yazar).includes(ipucuNorm)\n  );\n}\n\n// İpucu yoksa veya eşleşme bulunamadıysa: eğer kullanıcının bu üründe TEK bir yorumu\n// varsa, belirsizlik olmadığı için onu sil\nif (!hedef && kullaniciYorumlari.length === 1) {\n  hedef = kullaniciYorumlari[0];\n}\n\nif (!hedef) {\n  const mesaj = kullaniciYorumlari.length > 1\n    ? \"Bu üründe birden fazla yorumunuz var, hangisini kastettiğinizi anlayamadım. Yorumun içeriğinden bir kısmını belirtebilir misiniz?\"\n    : \"Silinecek bir yorumunuzu bulamadım. Bu ürüne daha önce bir yorum yapmamış olabilirsiniz.\";\n  return [{ json: { hata: true, mesaj } }];\n}\n\nreturn [{\n  json: {\n    hata: false,\n    urun_id: meta.urun_id,\n    review_id: hedef.review_id,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3488,
+        1168
+      ],
+      "id": "48b9aaf3-3219-4a23-8fe1-d349822bcb1a",
+      "name": "Silinecek Yorumu Bul"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "90135a2d-31dd-4a5c-9812-9ac08eff939a",
+              "leftValue": "={{ $json.hata }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3696,
+        1168
+      ],
+      "id": "b76b0381-e0ca-4d21-960b-878238ea4013",
+      "name": "If - Yorum Bulundu mu?"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { output: $input.first().json.mesaj } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3920,
+        1008
+      ],
+      "id": "ece70cb3-4e07-4d1b-b4a1-037b457b9424",
+      "name": "Bulunamadı Mesajı"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=http://shop-product-api:8000/products/{{ $json.urun_id }}/reviews/{{ $json.review_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3920,
+        1184
+      ],
+      "id": "7b31e183-732b-4e8d-bdf5-30b8675e582f",
+      "name": "Yorumu Sil (API)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nconst mesaj = response.basarili\n  ? \"Yorumunuz başarıyla silindi.\"\n  : \"Yorumunuzu silerken bir sorun oluştu. Sadece kendi eklediğiniz yorumları silebilirsiniz.\";\n\nreturn [{ json: { output: mesaj } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4208,
+        1184
+      ],
+      "id": "a77112e4-90e9-49d1-bb0d-d7a02e89f70b",
+      "name": "Silme Onay Mesajı"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://shop-product-api:8000/products/{{ $json.urun_id }}/reviews",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"yazar\": $json.kullanici_adi || \"Misafir Kullanıcı\", \"yildiz\": $json.yeni_yorum_yildiz || 5, \"metin\": $json.yeni_yorum_metni } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3488,
+        1392
+      ],
+      "id": "e920efdd-9f5b-46a0-b2e2-e9494a84191d",
+      "name": "Yorumu Ekle (API)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ÖNEMLİ: Redis Set node'u araya girdiği için $input artık Redis'in cevabı oluyor,\n// POST isteğinin gerçek cevabına ($('Yorumu Ekle (API)')) isimle referans veriyoruz.\n// 'HTTP Request2' kısmını kendi workflow'undaki gerçek POST node isminle değiştir.\nconst response = $('Yorumu Ekle (API)').first().json;\nconst urunAdi = $('Ürün ID Çöz + İçerik Kontrolü').first().json.urun_adi;\n\nconst mesaj = response.basarili\n  ? `Teşekkürler! **${urunAdi}** için yorumunuz eklendi:\\n\\n\"${response.yorum.metin}\" (${response.yorum.yildiz}⭐)`\n  : \"Yorumunuzu eklerken bir sorun oluştu, tekrar deneyebilir misiniz?\";\n\nreturn [{ json: { output: mesaj } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3696,
+        1392
+      ],
+      "id": "1e48eef1-c24c-4dba-85b5-7ee1b8512dbc",
+      "name": "Ekleme Onay Mesajı"
+    },
+    {
+      "parameters": {
+        "url": "=http://shop-product-api:8000/products/{{ $json.urun_id }}/reviews",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3488,
+        1584
+      ],
+      "id": "a96b6da3-5b3b-4fee-af8b-3cb928e905fa",
+      "name": "Yorumları Getir (Görüntüleme)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerçek yorumları LLM'e özetletmeden, AYNEN alt alta listeler. Sentiment analizi\n// ayrı bir adımda, sadece genel değerlendirme paragrafı olarak eklenecek.\n\nconst response = $input.first().json;\nconst urunAdi = $('Ürün ID Çöz + İçerik Kontrolü').first().json.urun_adi;\nconst yorumlar = response.yorumlar || [];\n\nif (yorumlar.length === 0) {\n  return [{ json: { output: `**${urunAdi}** için henüz yorum yapılmamış.` } }];\n}\n\nconst ortalama = response.ortalama_yildiz_yazili_yorumlardan;\n\nconst yildizGoster = (n) => \"⭐\".repeat(n) + \"☆\".repeat(5 - n);\n\nconst yorumSatirlari = yorumlar.map((y, i) => {\n  return `**${i + 1}. ${y.yazar}** — ${yildizGoster(y.yildiz)} (${y.yildiz}/5)\\n\"${y.metin}\"`;\n}).join(\"\\n\\n\");\n\nconst baslik = `**${urunAdi}** — ${yorumlar.length} yorum (ortalama ${ortalama}/5)\\n\\n`;\n\nreturn [{\n  json: {\n    yorumListesi: baslik + yorumSatirlari,\n    yorumlar_json: JSON.stringify(yorumlar),\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3696,
+        1584
+      ],
+      "id": "9ce05809-bfa1-4fc7-9cbc-8bb448d6e2a0",
+      "name": "Yorum Listesini Oluştur"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Aşağıda bir ürüne ait GERÇEK kullanıcı yorumları var. Bunları analiz edip TEK PARAGRAFLIK,\ndoğal ve akıcı bir genel değerlendirme yaz (ChatGPT/Claude tarzı, sıcak ve samimi bir dille).\n\nÜrün: {{ $('Ürün ID Çöz + İçerik Kontrolü').item.json.urun_adi }}\n\nYorumlar (JSON): {{ $json.yorumlar_json }}\n\nKESIN KURALLAR:\n- Sadece verilen gerçek yorumları kullan, uydurma yorum veya istatistik ekleme.\n- Doğrudan kullanıcıyla konuş (siz/sen dili), üçüncü şahıs anlatımı kullanma.\n- NUMARALANDIRILMIŞ BAŞLIKLAR KULLANMA (\"1.\", \"2.\" gibi). Tek, akıcı bir paragraf yaz.\n- Yorumları tek tek tekrar etme (onlar zaten ayrıca gösteriliyor) - sadece GENEL bir\n  değerlendirme yap: kaç yorumun olumlu/olumsuz olduğu, en çok bahsedilen artılar/eksiler,\n  ve genel bir sonuç cümlesi - hepsi TEK paragrafta, doğal bir anlatımla.\n\nSadece bu paragrafı döndür, başka açıklama ekleme.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        3920,
+        1584
+      ],
+      "id": "2ae36383-edb9-473f-962d-d09dc116288a",
+      "name": "Sentiment Analizi Üret (AI)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Deterministik yorum listesini (build-reviews-list.js çıktısı) ve LLM'in ürettiği\n// genel değerlendirme paragrafını birleştirir.\n\n// Not: 'Code in JavaScript' kısmını, senin workflow'undaki yorum listesi node'unun\n// gerçek ismiyle değiştir.\nconst yorumListesi = $('Yorum Listesini Oluştur').first().json.yorumListesi;\nconst llmCiktisi = $input.first().json;\nconst genelDegerlendirme = llmCiktisi.text || llmCiktisi.output || \"\";\n\nconst nihaiMetin = yorumListesi + \"\\n\\n---\\n\\n**💬 Genel Değerlendirme:**\\n\" + genelDegerlendirme;\n\nreturn [{ json: { output: nihaiMetin } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4224,
+        1584
+      ],
+      "id": "470f9601-4fd0-4975-a158-045485916e66",
+      "name": "Liste + Analizi Birleştir"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "urun_kesif",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4b0a65fe-b6fa-4e04-9296-2bda0f035eaf"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "urun_kesif"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c632cb73-3d95-4344-b0a9-bb9152fc1369",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "karsilastirma",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "karsilastirma"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7f65d7fa-ade3-46e0-b106-064f5f4eccd8",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "yorum_analiz",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "yorum_analiz"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9810d484-7d88-4ba9-a108-965b01702d8e",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "siparis_destek",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "siparis_destek"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "33be8bd1-e291-449d-bf5b-3d43d3180163",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "odeme_kampanya",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "odeme_kampanya"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "faacd164-3bde-4a2d-ab13-eefe9edd238d",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "iade_garanti",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "iade_garanti"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b48a40de-83c4-4c74-8f99-172b62a4cdfd",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "faq",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "faq"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "329f364a-25ff-4251-a50d-734069a82064",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "belirsiz",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "belirsiz"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        784,
+        1584
+      ],
+      "id": "e652fac9-98f2-4950-9ec3-5d8f4920ca99",
+      "name": "Switch - Kategoriye Göre Yönlendir"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1328,
+        3856
+      ],
+      "id": "1439bd5f-479f-4ce9-aac6-b4f6e08fa6fb",
+      "name": "OpenAI Chat Model6",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1328,
+        3024
+      ],
+      "id": "5e055a97-1c63-4d82-9c75-8a1c4edc182c",
+      "name": "OpenAI Chat Model7",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1312,
+        3440
+      ],
+      "id": "dfcdbd95-3a32-46a0-80a4-dc4493d6d7a5",
+      "name": "OpenAI Chat Model8",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sen bir e-ticaret sitesinin müşteri hizmetleri asistanısın. Kullanıcının sorusunu, aşağıdaki\nsıkça sorulan sorular bilgi tabanını kullanarak doğal ve yardımsever bir dille yanıtla.\n\nKullanıcının sorusu: {{ $('When chat message received').item.json.chatInput }}\n\nBilgi tabanı:\n## SIKÇA SORULAN SORULAR\n- Hesap oluşturma, şifre sıfırlama, üyelik iptali: Hesabım > Ayarlar bölümünden yapılır\n- Sipariş nasıl takip edilir: Hesabım > Siparişlerim'den kargo takip numarası görülebilir\n- Sipariş iptal edilebilir mi: Kargoya verilmeden önce Siparişlerim'den iptal edilebilir\n- Fatura bilgileri nasıl değiştirilir: Hesabım > Fatura Bilgilerim'den güncellenir\n- Kurumsal fatura kesilir mi: Evet, sipariş sırasında \"Kurumsal Fatura\" seçeneği işaretlenir\n- Uygulama/web sitesi teknik sorunları: Uygulamayı güncelleyip tekrar deneyin, sorun\n  devam ederse müşteri hizmetlerine ulaşın\n- Müşteri hizmetlerine ulaşım: 0850 XXX XX XX veya bu canlı destek asistanı üzerinden\n- Verilerim nasıl kullanılıyor / gizlilik politikası: Bu asistanla paylaştığınız mesajlar\n  sadece size daha iyi hizmet vermek (ürün önerisi, geçmiş konuşma bağlamı) için, sınırlı\n  bir süre boyunca saklanır ve otomatik olarak silinir. Kimlik, ödeme veya adres bilgisi\n  toplanmaz. Yorum eklerken paylaştığınız isim, gizlilik için kısaltılarak gösterilir\n  (örn. \"Ahmet Y.\"). Verileriniz üçüncü taraflarla paylaşılmaz.\n\nKESIN KURALLAR:\n- Doğrudan kullanıcıyla konuş (siz/sen dili), üçüncü şahıs anlatımı kullanma.\n- Sadece yukarıdaki bilgi tabanında olan bilgileri kullan, uydurma bilgi ekleme.\n- Eğer soru bilgi tabanında yoksa, dürüstçe bilmediğini söyle ve müşteri hizmetlerine\n  yönlendir.\n- ÖNEMLİ: Eğer sorunun cevabı bilgi tabanında VARSA, o bilgiyi DOĞRUDAN ve TAM olarak\n  ver - \"gizlilik politikamıza bakın\" gibi genel bir yönlendirme yaparak asıl cevabı\n  vermekten KAÇINMA. Elindeki bilgiyi kullanıcıya doğrudan anlat.\n- Kısa ve net cevap ver, gereksiz uzatma.\n\nSadece cevabı döndür, başka açıklama ekleme.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1328,
+        3680
+      ],
+      "id": "11c307ed-8f1f-4034-ada0-4dcdf934630c",
+      "name": "FAQ Cevabı Üret (AI)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sen bir e-ticaret sitesinin müşteri hizmetleri asistanısın. Kullanıcının ödeme yöntemleri\nveya kampanyalarla ilgili sorusunu, aşağıdaki bilgi tabanını kullanarak doğal ve yardımsever\nbir dille yanıtla.\n\nKullanıcının sorusu: {{ $('When chat message received').item.json.chatInput }}\n\nBilgi tabanı:\n## ÖDEME YÖNTEMLERİ & KAMPANYALAR\n- Kabul edilen ödeme yöntemleri: Kredi/banka kartı (tüm bankalar), kapıda ödeme (nakit/kart),\n  havale/EFT, dijital cüzdan (Papara, ininal)\n- Taksit seçenekleri: 3, 6, 9, 12 aya kadar taksit (bankaya göre değişir), bazı kategorilerde\n  taksit uygulanmaz (süpermarket, indirimli ürünler)\n- Güncel kampanyalar: Yeni üyelere ilk siparişte %10 indirim (kod: HOSGELDIN10), 500 TL üzeri\n  alışverişlerde 50 TL indirim (kod: BUYUK500), hafta sonu kargo bedava\n- Kampanya kodları sepette \"İndirim Kodu\" alanına girilir, birden fazla kod aynı anda\n  kullanılamaz\n\nKESIN KURALLAR:\n- Doğrudan kullanıcıyla konuş (siz/sen dili), üçüncü şahıs anlatımı kullanma.\n- Sadece yukarıdaki bilgi tabanında olan bilgileri kullan, uydurma bilgi ekleme.\n- Eğer soru bilgi tabanında yoksa, dürüstçe bilmediğini söyle ve müşteri hizmetlerine\n  yönlendir.\n- Kısa ve net cevap ver, gereksiz uzatma.\n\nSadece cevabı döndür, başka açıklama ekleme.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1328,
+        2880
+      ],
+      "id": "144e8e38-1fd2-4400-8bd2-9bd938a3387d",
+      "name": "Ödeme/Kampanya Cevabı Üret (AI)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sen bir e-ticaret sitesinin müşteri hizmetleri asistanısın. Kullanıcının iade, değişim veya\ngaranti ile ilgili sorusunu, aşağıdaki bilgi tabanını kullanarak doğal ve yardımsever bir\ndille yanıtla.\n\nKullanıcının sorusu: {{ $('When chat message received').item.json.chatInput }}\n\nBilgi tabanı:\n## İADE, DEĞİŞİM & GARANTİ\n- İade süresi: Ürün teslim alındıktan itibaren 14 gün içinde, kullanılmamış ve orijinal\n  ambalajında olması şartıyla\n- İade süreci: Hesabım > Siparişlerim > İlgili Sipariş > \"İade Talebi Oluştur\" ile başlatılır,\n  kargo firması ücretsiz olarak adresten alır\n- Para iadesi: İade onaylandıktan sonra 3-7 iş günü içinde ödeme yöntemine geri yapılır\n- Değişim: Sadece beden/renk değişimi için, stok durumuna bağlı\n- Garanti: Elektronik ürünlerde üretici garantisi (genelde 2 yıl), kozmetik/gıda gibi\n  higrojenik ürünlerde iade kabul edilmez (ambalajı açılmışsa)\n\nKESIN KURALLAR:\n- Doğrudan kullanıcıyla konuş (siz/sen dili), üçüncü şahıs anlatımı kullanma.\n- Sadece yukarıdaki bilgi tabanında olan bilgileri kullan, uydurma bilgi ekleme.\n- Eğer soru bilgi tabanında yoksa, dürüstçe bilmediğini söyle ve müşteri hizmetlerine\n  yönlendir.\n- Kısa ve net cevap ver, gereksiz uzatma.\n\nSadece cevabı döndür, başka açıklama ekleme.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1312,
+        3280
+      ],
+      "id": "65aea08b-1da0-4bae-a29b-cbdc08543f8b",
+      "name": "İade/Garanti Cevabı Üret (AI)"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2416,
+        2160
+      ],
+      "id": "0d58a168-c4d0-47de-8101-091c0f6b3747",
+      "name": "OpenAI Chat Model10",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2016,
+        2480
+      ],
+      "id": "33f1a36b-20ad-46d7-a6e8-e4867849a68b",
+      "name": "OpenAI Chat Model11",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=last_products:{{ $('When chat message received').item.json.sessionId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        2080
+      ],
+      "id": "b825eab4-dd12-4d17-be8e-8042671d2eb8",
+      "name": "Son Önerilen Ürünleri Oku2",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Kullanıcının HAM mesajını doğrudan tarayıp, içinde geçen bir ürün/marka adını bulur.\n// Ayrı bir LLM çıkarma adımına gerek yok - bu basit bir metin arama görevi, LLM'in JSON\n// formatlama hatası yapma riski olmadan, daha hızlı ve güvenilir çalışır.\n\nconst chatInput = $('When chat message received').item.json.chatInput || \"\";\n\nfunction parseRedisJson(nodeJson) {\n  try {\n    const redisValue = nodeJson.value ?? nodeJson.data ?? nodeJson.propertyName ?? nodeJson[Object.keys(nodeJson)[0]];\n    if (typeof redisValue !== \"string\") return redisValue || null;\n    try { return JSON.parse(redisValue); } catch (e) { return redisValue; }\n  } catch (e) {\n    return null;\n  }\n}\n\n// Bu node'un doğrudan girişi Redis (last_products) olmalı\nlet lastProducts = parseRedisJson($input.first().json);\nif (!Array.isArray(lastProducts)) lastProducts = [];\n\nfunction normalize(s) {\n  return (s || \"\").toLowerCase()\n    .replace(/ı/g, \"i\").replace(/ş/g, \"s\").replace(/ç/g, \"c\")\n    .replace(/ğ/g, \"g\").replace(/ö/g, \"o\").replace(/ü/g, \"u\");\n}\n\nconst mesajNorm = normalize(chatInput);\n\n// Listedeki her ürün için, markası veya adının bir kısmı mesajda geçiyor mu diye bak\nlet bulunanUrun = null;\nfor (const p of lastProducts) {\n  const markaNorm = normalize(p.marka);\n  const adiKelimeleri = normalize(p.urun_adi).split(/\\s+/).filter(w => w.length >= 4);\n  if (mesajNorm.includes(markaNorm) && adiKelimeleri.some(k => mesajNorm.includes(k))) {\n    bulunanUrun = p;\n    break;\n  }\n}\n// Marka eşleşip tam ürün ismi eşleşmezse bile, sadece marka + \"kaç tane var/stok\" gibi\n// bir bağlamda tek adaysa onu kullan\nif (!bulunanUrun) {\n  const markaEslesenler = lastProducts.filter(p => mesajNorm.includes(normalize(p.marka)));\n  if (markaEslesenler.length === 1) bulunanUrun = markaEslesenler[0];\n}\n\nreturn [{\n  json: {\n    urun_belirtildi_mi: !!bulunanUrun,\n    urun_id: bulunanUrun ? bulunanUrun.id : null,\n    urun_adi: bulunanUrun ? bulunanUrun.urun_adi : null,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        2080
+      ],
+      "id": "ccc21e16-d2ef-4185-9a8b-22708ef5202f",
+      "name": "Mesajdan Ürün Bul (Metin Tarama)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1774680-2ab0-4b8e-b414-ba12b228142c",
+              "leftValue": "={{ $json.urun_belirtildi_mi }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1744,
+        2080
+      ],
+      "id": "9d33aaf2-6924-4552-abbe-dfc0256cc36f",
+      "name": "If - Ürün Belirtildi mi?"
+    },
+    {
+      "parameters": {
+        "url": "=http://shop-product-api:8000/products/{{ $json.urun_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2032,
+        2000
+      ],
+      "id": "0f44ae24-41aa-40a9-89e8-7084b31c3a08",
+      "name": "Gerçek Stok Verisini Getir (API)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const urun = $input.first().json;\nconst metin = `${urun.urun_adi} (${urun.marka}) - Stok Durumu: ${urun.stok_durumu === \"STOKTA\" ? `Stokta (${urun.stok} adet)` : \"Stokta Yok\"}, Fiyat: ${urun.fiyat} TL`;\nreturn [{ json: { urunVerisi: metin } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2224,
+        2000
+      ],
+      "id": "7158033c-1d50-4ccc-b563-3e7811ae1627",
+      "name": "Stok Verisini Metne Çevir"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sen bir e-ticaret sitesinin müşteri hizmetleri asistanısın. Kullanıcının kargo/teslimat/stok\nsorusunu yanıtla.\n\nKullanıcının sorusu: {{ $('When chat message received').item.json.chatInput }}\n\nGenel kargo/teslimat bilgisi:\n- Standart teslimat süresi: sipariş onayından itibaren 2-4 iş günü\n- Kargo firmaları: Aras Kargo, Yurtiçi Kargo, MNG Kargo (satıcıya göre değişir)\n- 150 TL ve üzeri siparişlerde kargo ücretsizdir, altında 29,90 TL kargo ücreti alınır\n- Kargo takip numarası, sipariş onaylandıktan sonra SMS/e-posta ile gönderilir\n\nBelirli bir ürün için GERÇEK stok verisi (varsa): {{ $json.urunVerisi || \"Kullanıcı belirli bir ürün belirtmedi, sadece genel bilgi ver.\" }}\n\nKESIN KURALLAR:\n- Eğer yukarıda gerçek ürün verisi varsa, MUTLAKA onu kullanarak net bir stok durumu bilgisi ver.\n- ÇOK ÖNEMLİ: Eğer gerçek ürün verisi YOKSA ve kullanıcı belirli bir ürünün stok durumunu\n  soruyorsa, ASLA \"stokta var\" veya \"stokta yok\" gibi kesin bir iddia UYDURMA - bu tehlikeli\n  bir yanlış bilgi olur. Bunun yerine, hangi ürünü kastettiğini tam olarak belirtmesini iste\n  (örn. \"Hangi Apple ürününü kastettiğinizi tam belirtir misiniz? Örneğin listedeki sıra\n  numarasını (1, 2, 3...) veya tam ürün adını yazabilirsiniz.\").\n- Doğrudan kullanıcıyla konuş (siz/sen dili), üçüncü şahıs anlatımı kullanma.\n- Uydurma bilgi ekleme, sadece verilen gerçek veriyi ve genel politikayı kullan.\n- Kısa ve net cevap ver.\n\nSadece cevabı döndür, başka açıklama ekleme.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        2416,
+        2000
+      ],
+      "id": "8775ef89-5c15-447b-ae9f-7116353d2db8",
+      "name": "Sipariş Destek Cevabı Üret (AI)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cevap = $input.first().json.text || $input.first().json.output || \"\";\nreturn [{ json: { output: cevap } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2736,
+        2000
+      ],
+      "id": "ae5340eb-1817-4a82-a44f-9e66ed7f7284",
+      "name": "Cevabı Output'a Taşı"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cevap = $input.first().json.text || $input.first().json.output || \"\";\nreturn [{ json: { output: cevap } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        2304
+      ],
+      "id": "78037904-f0d7-4778-b41b-bdaa612d3afc",
+      "name": "Cevabı Output'a Taşı1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sen bir e-ticaret sitesinin müşteri hizmetleri asistanısın. Kullanıcının kargo/teslimat/stok\nsorusunu yanıtla.\n\nKullanıcının sorusu: {{ $('When chat message received').item.json.chatInput }}\n\nGenel kargo/teslimat bilgisi:\n- Standart teslimat süresi: sipariş onayından itibaren 2-4 iş günü\n- Kargo firmaları: Aras Kargo, Yurtiçi Kargo, MNG Kargo (satıcıya göre değişir)\n- 150 TL ve üzeri siparişlerde kargo ücretsizdir, altında 29,90 TL kargo ücreti alınır\n- Kargo takip numarası, sipariş onaylandıktan sonra SMS/e-posta ile gönderilir\n\nBelirli bir ürün için GERÇEK stok verisi (varsa): {{ $json.urunVerisi || \"Kullanıcı belirli bir ürün belirtmedi, sadece genel bilgi ver.\" }}\n\nKESIN KURALLAR:\n- Eğer yukarıda gerçek ürün verisi varsa, MUTLAKA onu kullanarak net bir stok durumu bilgisi ver.\n- ÇOK ÖNEMLİ: Eğer gerçek ürün verisi YOKSA ve kullanıcı belirli bir ürünün stok durumunu\n  soruyorsa, ASLA \"stokta var\" veya \"stokta yok\" gibi kesin bir iddia UYDURMA - bu tehlikeli\n  bir yanlış bilgi olur. Bunun yerine, hangi ürünü kastettiğini tam olarak belirtmesini iste\n  (örn. \"Hangi Apple ürününü kastettiğinizi tam belirtir misiniz? Örneğin listedeki sıra\n  numarasını (1, 2, 3...) veya tam ürün adını yazabilirsiniz.\").\n- Doğrudan kullanıcıyla konuş (siz/sen dili), üçüncü şahıs anlatımı kullanma.\n- Uydurma bilgi ekleme, sadece verilen gerçek veriyi ve genel politikayı kullan.\n- Kısa ve net cevap ver.\n\nSadece cevabı döndür, başka açıklama ekleme.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        2016,
+        2304
+      ],
+      "id": "25d931b0-25ec-44f7-9d3e-6e487edd1080",
+      "name": "Sipariş Destek Cevabı Üret (AI)1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1312,
+        4288
+      ],
+      "id": "bf5db47d-f06c-4db1-bdd1-0ba10ad2bab9",
+      "name": "OpenAI Chat Model9",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sen Shopix'sin — bir e-ticaret alışveriş asistanısın. Kullanıcının mesajı net bir kategoriye\n(ürün arama, karşılaştırma, yorum, sipariş/kargo, ödeme/kampanya, iade/garanti, FAQ) uymadı,\nbu yüzden sen cevap veriyorsun.\n\nKullanıcının mesajı: {{ $('When chat message received').item.json.chatInput }}\n\nÇOK ÖNEMLİ: Mesajın GERÇEK anlamına göre cevap ver, her mesaja aynı kalıp cevabı yapıştırma.\nÖnce şunu kontrol et: mesaj TANIDIK bir Türkçe/İngilizce kelime veya anlamlı bir cümle mi,\nyoksa rastgele tuşlara basılmış gibi mi (örn: \"hjdh\", \"asdkfj\", \"xkcvbn\")? Rastgele karakter\ndizisi ise KESİNLİKLE selamlama/tanıtım kalıbına GİRME, bunun yerine \"sizi anlayamadım\"\ntarzı bir cevap ver.\n\nAşağıdaki örnekler farklı mesaj TİPLERİ için farklı YAKLAŞIMLARI gösteriyor - kelimesi\nkelimesine kopyalama, kendi doğal cümlelerini kur:\n\n- SADECE GERÇEK SELAMLAMA kelimeleri (\"merhaba\", \"selam\", \"hey\", \"günaydın\", \"iyi günler\"):\n  Sıcakça karşıla, kendini \"Shopix\" olarak tanıt, 2-3 yetenek örneği ver - her seferinde\n  FARKLI kelimelerle, ezbere tekrar etme.\n- ANLAMA/ONAY SORUSU (\"anladın mı\", \"beni duyuyor musun\"): Bu bir capability listesi\n  isteği DEĞİL, doğal bir sohbet sorusu - \"Evet, seni dinliyorum! Ne konuda yardımcı\n  olabilirim?\" gibi kısa, doğal bir cevap ver, yetenek listesini tekrar sayma.\n- ANLAMSIZ/RASTGELE KARAKTERLER (gerçek kelime OLMAYAN, klavyeye rastgele basılmış gibi\n  duran metinler - \"hjdh\", \"asdkfj\", \"xkcvbn\" gibi): Selamlama/tanıtım YAPMA. Sadece\n  \"Sizi anlayamadım, ne aramak/sormak istediğinizi yazabilir misiniz?\" tarzı KISA bir\n  cevap ver - yetenek listesi ekleme, sade tut.\n- BELİRSİZ AMA ANLAMLI SORU (\"ne yapabilirsin\", \"yardım et\"): Yeteneklerini kısaca,\n  madde madde özetle.\n- Diğer her şey: Mesajın gerçek içeriğine uygun, doğal bir cevap ver.\n\nKESIN KURALLAR:\n- Doğrudan kullanıcıyla konuş (siz/sen dili), sıcak ve doğal bir ton kullan - robotik/\n  ezberlenmiş gibi hissettirme.\n- Kısa tut (1-3 cümle yeterli çoğu zaman).\n\nSadece cevabı döndür, başka açıklama ekleme.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1312,
+        4128
+      ],
+      "id": "22cbdb82-5ef6-4b93-b3b1-66fed81c6a4c",
+      "name": "Shopix Karşılama/Belirsiz Cevabı (AI)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cevap = $input.first().json.text || $input.first().json.output || \"\";\nreturn [{ json: { output: cevap } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        2880
+      ],
+      "id": "a25b5d99-d530-4354-8215-1e1a447b910a",
+      "name": "Cevabı Output'a Taşı2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cevap = $input.first().json.text || $input.first().json.output || \"\";\nreturn [{ json: { output: cevap } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        3280
+      ],
+      "id": "d6a3e928-0314-447b-a61a-7275c2dc2832",
+      "name": "Cevabı Output'a Taşı3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cevap = $input.first().json.text || $input.first().json.output || \"\";\nreturn [{ json: { output: cevap } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        3680
+      ],
+      "id": "c2406cf1-178a-44ff-85b1-32ce75c8d621",
+      "name": "Cevabı Output'a Taşı4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cevap = $input.first().json.text || $input.first().json.output || \"\";\nreturn [{ json: { output: cevap } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        4128
+      ],
+      "id": "4c217e28-9170-4c9e-ad13-e1b3563432d3",
+      "name": "Cevabı Output'a Taşı5"
+    },
+    {
+      "parameters": {
+        "content": "## 🧭 INTENT ROUTER\n## Kullanıcı mesajını 8 kategoriden birine yönlendirir\n\n## 📸 GÖRSEL ARAMA (GPT-4o Vision)\n## Kullanıcının yüklediği fotoğrafı analiz edip, gerçek katalogdaki en yakın ürünleri bulur\n",
+        "height": 832,
+        "width": 1744,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        1216
+      ],
+      "id": "9ebed43d-9f8e-4917-87b9-d5acafc47130",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## 🛍️ ÜRÜN KEŞİF\n## Tarafsızlık motoru + gerçek zamanlı skorlama\n",
+        "height": 416,
+        "width": 1216
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        -128
+      ],
+      "id": "e7ff3d08-b8c2-48be-9f2e-4d10182edd10",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## ⚖️ KARŞILAŞTIRMA\n## Deterministik tablo + AI destekli kriter analizi\n",
+        "height": 496,
+        "width": 2400,
+        "color": "#473944"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        336
+      ],
+      "id": "30d22d0e-0313-4ef6-bd3d-e27dc966bc99",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 💬 YORUM ANALİZİ\n## CRUD + canlı sentiment analizi + KVKK uyumlu",
+        "height": 960,
+        "width": 3152,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        928
+      ],
+      "id": "28ba6585-e3a2-4974-983a-a9e8bc8967be",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## 📦 SİPARİŞ DESTEK\n## Gerçek stok verisiyle kargo/teslimat bilgisi ",
+        "height": 672,
+        "width": 1712,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        1952
+      ],
+      "id": "a5a8e3f5-4ecb-4549-9c9b-aa9faae6654f",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 💳 ÖDEME & KAMPANYA",
+        "height": 368,
+        "width": 704,
+        "color": "#3E141E"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        2784
+      ],
+      "id": "d592225e-22ca-4686-ac56-40081778c298",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## 🔄 İADE & GARANTİ",
+        "height": 368,
+        "width": 704,
+        "color": "#3E141E"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        3200
+      ],
+      "id": "838698f3-a995-47ae-9809-df89a5c559e0",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## ❓ SIKÇA SORULAN SORULAR",
+        "height": 368,
+        "width": 704,
+        "color": "#3E141E"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        3616
+      ],
+      "id": "99b7f9b8-22cf-4f9b-a797-395b0eaeadf9",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## 👋 SHOPIX KARŞILAMA\n## Selamlama + belirsiz mesaj yönetimi",
+        "height": 400,
+        "width": 704,
+        "color": "#3E141E"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        4016
+      ],
+      "id": "e6826b22-192d-4bdc-ad25-f94a19f5d9f6",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ab8d63a1-c0b2-4585-a9ca-69c7f627bca9",
+              "leftValue": "={{ Object.keys($binary || {}).length > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -768,
+        1552
+      ],
+      "id": "665e82a3-760d-4bd6-936d-ca3791fac168",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Kullanıcının yüklediği görseli, OpenAI Vision API'sinin beklediği base64 data URI\n// formatına çevirir. n8n'de binary veri genelde 'data' anahtarı altında gelir.\n\nconst binaryKeys = Object.keys($input.first().binary || {});\nif (binaryKeys.length === 0) {\n  return [{ json: { hata: true, mesaj: \"Görsel bulunamadı.\" } }];\n}\n\nconst binaryKey = binaryKeys[0];\nconst binaryData = $input.first().binary[binaryKey];\nconst mimeType = binaryData.mimeType || \"image/jpeg\";\n\n// n8n'de binary buffer'a erişim - helper fonksiyon kullanıyoruz\nconst buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nconst base64 = buffer.toString(\"base64\");\nconst dataUri = `data:${mimeType};base64,${base64}`;\n\nreturn [{ json: { imageDataUri: dataUri, hata: false } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        1440
+      ],
+      "id": "b2b70241-e8d0-4d61-ae47-7b59dc9afcae",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Sen bir e-ticaret görsel arama asistanısın. Kullanıcının yüklediği ürün fotoğrafını analiz edip, bu ürünü bir e-ticaret kataloğunda aramak için kullanılacak anahtar kelimeleri çıkar. SADECE JSON formatında yanıt ver, markdown kod bloğu veya açıklama ekleme. Format: {\\\"urun_tipi\\\": \\\"...\\\", \\\"renk\\\": \\\"...\\\", \\\"arama_terimi\\\": \\\"...\\\", \\\"tahmini_kategori\\\": \\\"...\\\"}. arama_terimi alanı, ürünün ana tipini tek/iki kelimeyle özetlemeli (örn: 'kulaklık', 'elbise', 'spor ayakkabı'). tahmini_kategori şunlardan biri olmalı: Kadın, Erkek, Elektronik, Kozmetik, Ayakkabı & Çanta, Ev & Yaşam, Spor & Outdoor, Anne & Çocuk, Süpermarket, Saat & Aksesuar.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": [\n        { \"type\": \"text\", \"text\": \"Bu görseldeki ürünü analiz et.\" },\n        { \"type\": \"image_url\", \"image_url\": { \"url\": $json.imageDataUri } }\n      ]\n    }\n  ],\n  \"max_tokens\": 300\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -320,
+        1440
+      ],
+      "id": "0849369d-5985-4bdb-9ac1-c9775842eef8",
+      "name": "HTTP Request",
+      "credentials": {
+        "openAiApi": {
+          "id": "26nfPhOXXiHAIAxI",
+          "name": "OpenAI account pegasus"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// OpenAI Chat Completions API'sinin ham cevabından, modelin ürettiği metni çıkarıp\n// JSON olarak ayrıştırır. Diğer modüllerdeki savunmacı ayrıştırma mantığıyla aynı.\n\nconst response = $input.first().json;\nconst rawText = response.choices && response.choices[0] && response.choices[0].message\n  ? response.choices[0].message.content\n  : \"\";\n\nfunction guvenliJsonAyristir(text) {\n  let temiz = (text || \"\").trim();\n  temiz = temiz.replace(/^```json\\s*/i, \"\").replace(/^```\\s*/, \"\").replace(/```\\s*$/, \"\");\n  temiz = temiz.trim();\n  try {\n    return JSON.parse(temiz);\n  } catch (e) {\n    const match = temiz.match(/\\{[\\s\\S]*\\}/);\n    if (match) {\n      try { return JSON.parse(match[0]); } catch (e2) { return null; }\n    }\n    return null;\n  }\n}\n\nconst parsed = guvenliJsonAyristir(rawText);\n\nif (!parsed) {\n  return [{\n    json: {\n      hata: true,\n      mesaj: \"Görseli analiz edemedim, tekrar deneyebilir misiniz? Farklı bir açıdan çekilmiş bir fotoğraf işe yarayabilir.\"\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    hata: false,\n    urun_tipi: parsed.urun_tipi || \"\",\n    renk: parsed.renk || \"\",\n    arama_terimi: parsed.arama_terimi || \"\",\n    tahmini_kategori: parsed.tahmini_kategori || \"\",\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        1440
+      ],
+      "id": "be07a5fc-5f31-4e09-a0c7-d7b9c4cced34",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "url": "=http://shop-product-api:8000/products/search?query={{ $json.arama_terimi }}&kategori={{ $json.tahmini_kategori }}&limit=5",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        96,
+        1440
+      ],
+      "id": "39224f8f-bdcb-4142-8945-8f8456e716e4",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Görsel aramadan gelen ürün sonuçlarını, Ürün Keşif modülündeki kart formatına benzer\n// şekilde gösterir, ama görsel analizinden ne anlaşıldığını da başta belirtir.\n// Not: '$('Code in JavaScript')' kısmını, vision sonucunu ayrıştıran node'un GERÇEK\n// ismiyle değiştir.\n\nconst response = $input.first().json;\nconst analiz = $('Code in JavaScript1').first().json;\nconst oneriler = response.oneriler || response.urunler || [];\n\nif (oneriler.length === 0) {\n  return [{\n    json: {\n      output: `Görselinizde **${analiz.urun_tipi || \"bir ürün\"}** (${analiz.renk || \"renk belirsiz\"}) tespit ettim, ama kataloğumuzda eşleşen bir ürün bulamadım. Farklı bir arama terimiyle tekrar dener misiniz?`\n    }\n  }];\n}\n\nconst kategoriEmoji = {\n  \"Elektronik\": \"🔌\", \"Kadın\": \"👗\", \"Erkek\": \"👔\", \"Kozmetik\": \"💄\",\n  \"Ayakkabı & Çanta\": \"👜\", \"Ev & Yaşam\": \"🏠\", \"Spor & Outdoor\": \"⚽\",\n  \"Anne & Çocuk\": \"🧸\", \"Süpermarket\": \"🛒\", \"Saat & Aksesuar\": \"⌚\"\n};\n\nconst kartlar = oneriler.slice(0, 5).map((urun, index) => {\n  const emoji = urun.alt_kategori === \"Elektronik\" ? \"🔌\" : (kategoriEmoji[urun.ana_kategori] || \"🛍️\");\n  const fiyatFormatli = urun.fiyat.toLocaleString('tr-TR', { minimumFractionDigits: 2 });\n  const stokMetni = urun.stok_durumu === \"STOKTA\" ? \"✅ Stokta\" : \"❌ Stokta yok\";\n\n  return `**${index + 1}. ${emoji} ${urun.urun_adi}**\n\n- Marka: ${urun.marka}\n- Fiyat: **${fiyatFormatli} TL**\n- Puan: ⭐ ${urun.puan}/5 (${urun.yorum_sayisi} değerlendirme)\n- Durum: ${stokMetni}`;\n}).join(\"\\n\\n———————————————\\n\\n\");\n\nconst baslik = `📸 Görselinizi analiz ettim: **${analiz.urun_tipi}** (${analiz.renk}) gibi görünüyor.\\n\\nBuna en yakın ${oneriler.length} ürünü buldum:\\n\\n`;\n\nreturn [{ json: { output: baslik + kartlar } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        1440
+      ],
+      "id": "9a183415-7b03-4488-be39-6f4bdd8eddde",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=last_products:{{ $('When chat message received').item.json.sessionId }}",
+        "value": "={{ JSON.stringify($('HTTP Request1').item.json.urunler) }}",
+        "keyType": "string",
+        "expire": true,
+        "ttl": 1800
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        512,
+        1440
+      ],
+      "id": "0b5b7905-25fe-4f5e-b6b6-175837a3fd76",
+      "name": "Redis",
+      "credentials": {
+        "redis": {
+          "id": "GhTPNymtbEgWgXo5",
+          "name": "Redis account - shop"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch - Kategoriye Göre Yönlendir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Karşılaştırma Bilgisi Çıkar (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Karşılaştırma Anlatımı Üret (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Yorum Bilgisi Çıkar (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Arama Kriterleri Çıkar (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sentiment Analizi Üret (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Arama Kriterleri Çıkar (AI)": {
+      "main": [
+        [
+          {
+            "node": "JSON Güvenli Ayrıştır",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Güvenli Ayrıştır": {
+      "main": [
+        [
+          {
+            "node": "Ürün Önerisi Getir (API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ürün Önerisi Getir (API)": {
+      "main": [
+        [
+          {
+            "node": "Sonuçları Kart Formatına Çevir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sonuçları Kart Formatına Çevir": {
+      "main": [
+        [
+          {
+            "node": "Son Önerilen Ürünleri Kaydet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Karşılaştırma Bilgisi Çıkar (AI)": {
+      "main": [
+        [
+          {
+            "node": "Son Önerilen Ürünleri Oku",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Son Önerilen Ürünleri Oku": {
+      "main": [
+        [
+          {
+            "node": "Bekleyen Karşılaştırmayı Oku",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bekleyen Karşılaştırmayı Oku": {
+      "main": [
+        [
+          {
+            "node": "Ürün ID'lerini Çöz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ürün ID'lerini Çöz": {
+      "main": [
+        [
+          {
+            "node": "Bekleyen Karşılaştırmayı Kaydet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bekleyen Karşılaştırmayı Kaydet": {
+      "main": [
+        [
+          {
+            "node": "Karşılaştırma Verisini Getir (API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Karşılaştırma Verisini Getir (API)": {
+      "main": [
+        [
+          {
+            "node": "If - Kriter Belirtilmiş mi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Kriter Belirtilmiş mi?": {
+      "main": [
+        [
+          {
+            "node": "Kriter Sor (Deterministik)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Karşılaştırma Tablosu Oluştur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kriter Sor (Deterministik)": {
+      "main": [
+        []
+      ]
+    },
+    "Karşılaştırma Tablosu Oluştur": {
+      "main": [
+        [
+          {
+            "node": "Karşılaştırma Anlatımı Üret (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Karşılaştırma Anlatımı Üret (AI)": {
+      "main": [
+        [
+          {
+            "node": "Tablo ve Anlatımı Birleştir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yorum Bilgisi Çıkar (AI)": {
+      "main": [
+        [
+          {
+            "node": "JSON Güvenli Ayrıştır1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Güvenli Ayrıştır1": {
+      "main": [
+        [
+          {
+            "node": "Son Önerilen Ürünleri Oku1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Son Önerilen Ürünleri Oku1": {
+      "main": [
+        [
+          {
+            "node": "Son Aktif Ürünü Oku",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Son Aktif Ürünü Oku": {
+      "main": [
+        [
+          {
+            "node": "Ürün ID Çöz + İçerik Kontrolü",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ürün ID Çöz + İçerik Kontrolü": {
+      "main": [
+        [
+          {
+            "node": "Son Aktif Ürünü Kaydet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Son Aktif Ürünü Kaydet": {
+      "main": [
+        [
+          {
+            "node": "If - Hata Var mı?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Hata Var mı?": {
+      "main": [
+        [
+          {
+            "node": "Hata Mesajını Göster",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If - Silme mi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Silme mi?": {
+      "main": [
+        [
+          {
+            "node": "Yorumları Getir (Silme İçin)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If - Ekleme mi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Ekleme mi?": {
+      "main": [
+        [
+          {
+            "node": "Yorumu Ekle (API)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Yorumları Getir (Görüntüleme)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yorumları Getir (Silme İçin)": {
+      "main": [
+        [
+          {
+            "node": "Silinecek Yorumu Bul",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Silinecek Yorumu Bul": {
+      "main": [
+        [
+          {
+            "node": "If - Yorum Bulundu mu?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Yorum Bulundu mu?": {
+      "main": [
+        [
+          {
+            "node": "Bulunamadı Mesajı",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Yorumu Sil (API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yorumu Sil (API)": {
+      "main": [
+        [
+          {
+            "node": "Silme Onay Mesajı",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yorumu Ekle (API)": {
+      "main": [
+        [
+          {
+            "node": "Ekleme Onay Mesajı",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yorumları Getir (Görüntüleme)": {
+      "main": [
+        [
+          {
+            "node": "Yorum Listesini Oluştur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yorum Listesini Oluştur": {
+      "main": [
+        [
+          {
+            "node": "Sentiment Analizi Üret (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sentiment Analizi Üret (AI)": {
+      "main": [
+        [
+          {
+            "node": "Liste + Analizi Birleştir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Kategoriye Göre Yönlendir": {
+      "main": [
+        [
+          {
+            "node": "Arama Kriterleri Çıkar (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Karşılaştırma Bilgisi Çıkar (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Yorum Bilgisi Çıkar (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Son Önerilen Ürünleri Oku2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ödeme/Kampanya Cevabı Üret (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "İade/Garanti Cevabı Üret (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FAQ Cevabı Üret (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shopix Karşılama/Belirsiz Cevabı (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "FAQ Cevabı Üret (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ödeme/Kampanya Cevabı Üret (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model8": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "İade/Garanti Cevabı Üret (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ Cevabı Üret (AI)": {
+      "main": [
+        [
+          {
+            "node": "Cevabı Output'a Taşı4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ödeme/Kampanya Cevabı Üret (AI)": {
+      "main": [
+        [
+          {
+            "node": "Cevabı Output'a Taşı2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "İade/Garanti Cevabı Üret (AI)": {
+      "main": [
+        [
+          {
+            "node": "Cevabı Output'a Taşı3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model10": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sipariş Destek Cevabı Üret (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model11": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sipariş Destek Cevabı Üret (AI)1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Son Önerilen Ürünleri Oku2": {
+      "main": [
+        [
+          {
+            "node": "Mesajdan Ürün Bul (Metin Tarama)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mesajdan Ürün Bul (Metin Tarama)": {
+      "main": [
+        [
+          {
+            "node": "If - Ürün Belirtildi mi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Ürün Belirtildi mi?": {
+      "main": [
+        [
+          {
+            "node": "Gerçek Stok Verisini Getir (API)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sipariş Destek Cevabı Üret (AI)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerçek Stok Verisini Getir (API)": {
+      "main": [
+        [
+          {
+            "node": "Stok Verisini Metne Çevir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stok Verisini Metne Çevir": {
+      "main": [
+        [
+          {
+            "node": "Sipariş Destek Cevabı Üret (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sipariş Destek Cevabı Üret (AI)": {
+      "main": [
+        [
+          {
+            "node": "Cevabı Output'a Taşı",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cevabı Output'a Taşı1": {
+      "main": [
+        []
+      ]
+    },
+    "Sipariş Destek Cevabı Üret (AI)1": {
+      "main": [
+        [
+          {
+            "node": "Cevabı Output'a Taşı1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model9": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Shopix Karşılama/Belirsiz Cevabı (AI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shopix Karşılama/Belirsiz Cevabı (AI)": {
+      "main": [
+        [
+          {
+            "node": "Cevabı Output'a Taşı5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "54307689-1b59-4b10-a32d-aee4a20c2866",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "13dc5236432b2b526a43388d394b6c8668208af8d8804d352a2e33d3039fc231"
+  },
+  "id": "AeRDSydlUyDAPwwO",
+  "tags": []
+}
