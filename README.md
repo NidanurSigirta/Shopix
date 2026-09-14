@@ -139,7 +139,7 @@ Zero failed requests across 6,000+ total requests, even at 6x baseline load — 
 
 ## ✒️ Developer
 
-**Nidanur Sıgırta**
+**Nidanur Sigirta**
 
 ---
 
