@@ -13,7 +13,7 @@ Unlike a typical single-flow chatbot, Shopix routes every incoming message (text
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - **🧭 Intelligent Intent Routing** — Classifies every message into 8 categories (or routes images directly to Visual Search) using GPT-4o-mini, with priority-ordered disambiguation rules for edge cases.
 - **⚖️ Bias-Free Recommendation Engine** — A transparent, weighted scoring formula (text match, budget fit, rating, stock) ranks products with a human-readable "why I recommended this" rationale for every result.
