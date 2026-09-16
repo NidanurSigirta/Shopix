@@ -5,7 +5,7 @@
 
 ---
 
-## 📖 About the Project
+## About the Project
 
 Shopix was engineered around a single non-negotiable principle: **the agent must act as a trustworthy advisor, never a salesperson.** Every product recommendation is transparently scored, every claim is grounded in real data, and every module was stress-tested — not just designed on paper.
 
@@ -15,18 +15,18 @@ Unlike a typical single-flow chatbot, Shopix routes every incoming message (text
 
 ## Key Features
 
-- **🧭 Intelligent Intent Routing** — Classifies every message into 8 categories (or routes images directly to Visual Search) using GPT-4o-mini, with priority-ordered disambiguation rules for edge cases.
-- **⚖️ Bias-Free Recommendation Engine** — A transparent, weighted scoring formula (text match, budget fit, rating, stock) ranks products with a human-readable "why I recommended this" rationale for every result.
-- **🔍 Hybrid Product Comparison** — Deterministic table generation combined with AI-generated, criteria-aware narrative advice; multi-turn memory lets users answer follow-up questions without repeating product names.
-- **💬 Full CRUD Review & Sentiment System** — Users can add, view, and delete reviews. Deletion works via fuzzy, content-based matching (Levenshtein distance) — session-independent and typo-tolerant.
-- **📸 Visual Search (GPT-4o Vision)** — Upload a product photo with zero text, and Shopix identifies the item and matches it against the real catalog — fully integrated with the same Redis session state as every other search path.
-- **📦 Live Stock & Order Support** — Real-time stock lookups via direct FastAPI calls (no LLM guesswork — the system never fabricates availability).
-- **🔐 Privacy by Design (KVKK-Compliant)** — Automatic name masking, content moderation, strict TTL-based session expiry, and user-scoped deletion permissions — all baked into the architecture, not bolted on.
-- **🚀 Load-Tested for Scale** — Validated at 50/150/300 concurrent users with a custom async load-testing suite: **100% success rate**, zero dropped requests, graceful degradation under 6x load.
+- ** Intelligent Intent Routing** — Classifies every message into 8 categories (or routes images directly to Visual Search) using GPT-4o-mini, with priority-ordered disambiguation rules for edge cases.
+- ** Bias-Free Recommendation Engine** — A transparent, weighted scoring formula (text match, budget fit, rating, stock) ranks products with a human-readable "why I recommended this" rationale for every result.
+- ** Hybrid Product Comparison** — Deterministic table generation combined with AI-generated, criteria-aware narrative advice; multi-turn memory lets users answer follow-up questions without repeating product names.
+- ** Full CRUD Review & Sentiment System** — Users can add, view, and delete reviews. Deletion works via fuzzy, content-based matching (Levenshtein distance) — session-independent and typo-tolerant.
+- ** Visual Search (GPT-4o Vision)** — Upload a product photo with zero text, and Shopix identifies the item and matches it against the real catalog — fully integrated with the same Redis session state as every other search path.
+- ** Live Stock & Order Support** — Real-time stock lookups via direct FastAPI calls (no LLM guesswork — the system never fabricates availability).
+- ** Privacy by Design (KVKK-Compliant)** — Automatic name masking, content moderation, strict TTL-based session expiry, and user-scoped deletion permissions — all baked into the architecture, not bolted on.
+- ** Load-Tested for Scale** — Validated at 50/150/300 concurrent users with a custom async load-testing suite: **100% success rate**, zero dropped requests, graceful degradation under 6x load.
 
 ---
 
-## 👥 What Users Can Do
+## What Users Can Do
 
 - **Discover** — Search naturally ("kulaklık arıyorum, 5000 TL bütçemle") and get ranked, justified recommendations.
 - **Compare** — Ask the assistant to compare any two products and receive a criteria-driven verdict.
@@ -36,7 +36,7 @@ Unlike a typical single-flow chatbot, Shopix routes every incoming message (text
 
 ---
 
-## 🧠 Architecture Philosophy: AI vs. Deterministic Code
+## Architecture Philosophy: AI vs. Deterministic Code
 
 A core engineering decision throughout Shopix: **not every task should be solved with an LLM.**
 
@@ -53,7 +53,7 @@ This split reduced API cost, eliminated an entire class of LLM-inconsistency bug
 
 ---
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 | Technology | Purpose |
 |---|---|
@@ -84,7 +84,7 @@ shopix/
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 **1. Clone the repository**
 ```bash
@@ -127,7 +127,7 @@ Zero failed requests across 6,000+ total requests, even at 6x baseline load — 
 
 ---
 
-## 🔐 Security & Privacy
+## Security & Privacy
 
 - Automatic **name masking** on all user-submitted reviews ("Nidanur Sığırta" → "Nidanur S.")
 - **Content moderation** on new reviews only — never blocks a user's own deletion rights
@@ -137,14 +137,8 @@ Zero failed requests across 6,000+ total requests, even at 6x baseline load — 
 
 ---
 
-## ✒️ Developer
+## Developer
 
 **Nidanur Sigirta**
 
 ---
-
-## 🛡️ License
-
-© 2026 Shopix. All rights reserved.
-
-*Built with intention — trustworthy AI, one honest recommendation at a time.*
